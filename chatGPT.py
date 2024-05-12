@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import pickle
 from pathlib import Path
 import streamlit_authenticator as stauth
-
+import hashlib
 
 # Set page configuration
 st.set_page_config(page_title="Rate My Professor")
@@ -22,10 +22,14 @@ st.set_page_config(page_title="Rate My Professor")
 names = ["Nikki Aung","Zenith Oo"]
 usernames = ["Nikki", "Zenith"]
 
+
 file_path = Path(__file__).parent / "hashed_pw.pkl"
 with file_path.open("rb") as file:
     hashed_passwords = pickle.load(file)
 
+file_path = Path(__file__).parent / "hashed_sk.pkl"
+with file_path.open("rb") as file:
+    hashed_specialKey = pickle.load(file)
 
 authenticator = stauth.Authenticate(names, usernames, hashed_passwords, 
             "CCSF_dashboard", "abcdef", cookie_expiry_days=3)
@@ -68,7 +72,19 @@ if authentication_status:
         vector_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
         return vector_store
 
-
+    def handle_pdf_upload():
+        pdf_docs = st.file_uploader("Upload your PDF Files and Click on the Submit & Process Button", accept_multiple_files=True)
+        if st.button("Submit & Process"):
+            with st.spinner("Processing..."):
+                raw_text = get_pdf_text(pdf_docs)
+                text_chunks = get_text_chunks(raw_text)
+                #get_vector_store(text_chunks)
+                #st.success("Done")
+                if text_chunks:  # Check if text_chunks is not empty
+                    get_vector_store(text_chunks)
+                    st.success("Done")
+                else:
+                    st.error("No text found in PDF files.")
 
 
     def get_conversational_chain():
@@ -101,13 +117,21 @@ if authentication_status:
             authenticator.logout("Logout", "sidebar")
             st.title(f"Welcome {name}")
             st.title("Menu:")
-            pdf_docs = st.file_uploader("Upload your PDF Files and Click on the Submit & Process Button", accept_multiple_files=True)
-            if st.button("Submit & Process"):
-                with st.spinner("Processing..."):
-                    raw_text = get_pdf_text(pdf_docs)
-                    text_chunks = get_text_chunks(raw_text)
-                    get_vector_store(text_chunks)
-                    st.success("Done")
+            special_key_input = st.text_input("Enter the special access key")
+    
+            if special_key_input:
+                hashed_input = hashlib.sha256(special_key_input.encode()).hexdigest()
+                #print(hashed_input[0]) #$2b$12$.MJW0EYlESYjLqIsy/cfYOAkcHJfbe/.Wp7PHwiGKXAILn1QDssvC
+                #print(hashed_specialKey[0]) #$2b$12$NdEYdpgImbIGyqp7WxLYAOObK4D8hE519vLyDjJhhUlabiWpcRwKO
+                if hashed_input[0] == hashed_specialKey[0]:
+                    handle_pdf_upload()
+                else:
+                    st.write("You do not have permission to upload PDF files")
+
+
+
+
+
 
     if __name__ == "__main__":
         main()
