@@ -78,8 +78,6 @@ if authentication_status:
             with st.spinner("Processing..."):
                 raw_text = get_pdf_text(pdf_docs)
                 text_chunks = get_text_chunks(raw_text)
-                #get_vector_store(text_chunks)
-                #st.success("Done")
                 if text_chunks:  # Check if text_chunks is not empty
                     get_vector_store(text_chunks)
                     st.success("Done")
@@ -121,8 +119,6 @@ if authentication_status:
     
             if special_key_input:
                 hashed_input = hashlib.sha256(special_key_input.encode()).hexdigest()
-                #print(hashed_input[0]) #$2b$12$.MJW0EYlESYjLqIsy/cfYOAkcHJfbe/.Wp7PHwiGKXAILn1QDssvC
-                #print(hashed_specialKey[0]) #$2b$12$NdEYdpgImbIGyqp7WxLYAOObK4D8hE519vLyDjJhhUlabiWpcRwKO
                 if hashed_input[0] == hashed_specialKey[0]:
                     handle_pdf_upload()
                 else:
